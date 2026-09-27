@@ -10,14 +10,14 @@ const expectedProducts = [
   'Test.allTheThings() T-Shirt (Red)',
 ];
 
-test.describe('Product grid and filtering', () => {
+test.describe('Product grid and filtering', { tag: '@regression' }, () => {
   test.beforeEach(async ({ inventoryPage, loginPage }) => {
     await loginPage.goto();
     await loginPage.login(users.standard.username, users.standard.password);
     await inventoryPage.expectLoaded();
   });
 
-  test('SL-01 Product grid shows all catalog items @smoke', async ({ inventoryPage }) => {
+  test('SL-01 Product grid shows all catalog items', { tag: '@smoke' }, async ({ inventoryPage }) => {
     await expect(inventoryPage.inventoryItems).toHaveCount(6);
     expect(await inventoryPage.productNamesText()).toEqual(expectedProducts);
 
@@ -29,20 +29,17 @@ test.describe('Product grid and filtering', () => {
     }
   });
 
-  test('SL-02 Responsive layout preserves catalog items', async ({ inventoryPage, page }) => {
-    const desktopNames = await inventoryPage.productNamesText();
-
-    await page.setViewportSize({ width: 390, height: 844 });
+  test('SL-02 Responsive layout preserves catalog items', { tag: '@mobile' }, async ({ inventoryPage, page }) => {
+    const viewport = page.viewportSize();
     await expect(inventoryPage.inventoryItems).toHaveCount(6);
-    const mobileNames = await inventoryPage.productNamesText();
+    const names = await inventoryPage.productNamesText();
 
-    expect(mobileNames).toEqual(desktopNames);
+    expect(names).toEqual(expectedProducts);
     for (const item of await inventoryPage.inventoryItems.all()) {
-      expect(await item.evaluate((element) => element.getBoundingClientRect().width)).toBeLessThanOrEqual(390);
+      expect(await item.evaluate((element) => element.getBoundingClientRect().width)).toBeLessThanOrEqual(
+        viewport!.width,
+      );
     }
-
-    await page.setViewportSize({ width: 1280, height: 720 });
-    expect(await inventoryPage.productNamesText()).toEqual(desktopNames);
   });
 
   test('SL-03 Opening a product shows matching details', async ({ inventoryPage, page }) => {

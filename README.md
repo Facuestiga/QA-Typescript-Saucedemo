@@ -4,10 +4,10 @@ A TypeScript and Playwright end-to-end test automation project for
 [SauceDemo](https://www.saucedemo.com/). It is designed as a practical bridge
 from Java, Selenium, Appium, and TestNG into modern Playwright test automation.
 
-The suite contains 22 independent test cases across authentication, inventory,
+The suite contains 23 independent test cases across authentication, inventory,
 cart, and checkout flows. It follows the official Playwright recommendations:
 user-facing locators, web-first assertions, test isolation, fixtures, Page
-Objects, multi-browser projects, failure artifacts, and CI execution.
+Objects, multi-browser and mobile projects, failure artifacts, and CI execution.
 
 ## Test cases
 
@@ -60,7 +60,7 @@ in [`test-cases.csv`](test-cases.csv).
 - Node.js 22 or newer
 - TypeScript with strict type checking
 - Playwright Test
-- Chromium, Firefox, and WebKit projects
+- Chromium, Firefox, WebKit, and Pixel 7 emulation projects
 - Playwright HTML report, traces, screenshots, and videos
 - GitHub Actions
 
@@ -88,6 +88,9 @@ npm run test:headed
 npm run test:ui
 npm run test:debug
 npm run test:smoke
+npm run test:regression
+npm run test:mobile
+npm run test:ci
 npm run typecheck
 npm run report
 ```
@@ -116,8 +119,25 @@ npx playwright show-trace test-results/path/to/trace.zip
 - Assertions use Playwright's retrying `expect` matchers.
 - Page Objects expose business actions instead of implementation details.
 - Secrets are not required because SauceDemo publishes its practice accounts.
-- Smoke coverage is tagged with `@smoke` for quick feedback.
+- `@regression` identifies the complete functional coverage.
+- `@smoke` identifies the fastest critical paths and runs on Chromium.
+- `@mobile` identifies behavior that only makes sense under Mobile Web emulation.
+- The mobile project uses the Pixel 7 device profile and executes smoke plus
+  mobile-specific coverage.
 - CI runs type checking before the full cross-browser suite.
+
+## Execution strategy
+
+| Command | Scope | Intended use |
+|---|---|---|
+| `npm run test:smoke` | Critical paths in Chromium | Fast local and pull-request feedback |
+| `npm run test:regression` | Functional suite across configured projects | Broad validation before integration or release |
+| `npm run test:mobile` | Smoke and mobile-specific cases on Pixel 7 | Mobile Web validation |
+| `npm run test:ci` | Critical paths in Chromium | Stable entry point for CI |
+
+Tags are stored as Playwright metadata rather than as part of test titles. The
+desktop projects omit mobile-only scenarios, while the mobile project combines
+critical paths with responsive coverage.
 
 ## Official references
 
