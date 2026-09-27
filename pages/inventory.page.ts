@@ -28,6 +28,28 @@ export class InventoryPage {
     return this.inventoryItems.filter({ hasText: name });
   }
 
+  productName(name: string): Locator {
+    return this.product(name).getByTestId('inventory-item-name');
+  }
+
+  productPrice(name: string): Locator {
+    return this.product(name).getByTestId('inventory-item-price');
+  }
+
+  async productNamesText(): Promise<string[]> {
+    return this.productNames.allTextContents();
+  }
+
+  async productPricesNumber(): Promise<number[]> {
+    return (await this.productPrices.allTextContents()).map((price) =>
+      Number(price.replace('$', '')),
+    );
+  }
+
+  async openProduct(name: string): Promise<void> {
+    await this.productName(name).click();
+  }
+
   async addProduct(name: string): Promise<void> {
     await this.product(name).getByRole('button', { name: 'Add to cart' }).click();
   }
@@ -40,8 +62,16 @@ export class InventoryPage {
     await this.cartLink.click();
   }
 
-  async logout(): Promise<void> {
+  async openMenu(): Promise<void> {
     await this.menuButton.click();
+  }
+
+  async closeMenu(): Promise<void> {
+    await this.page.getByRole('button', { name: 'Close Menu' }).click();
+  }
+
+  async logout(): Promise<void> {
+    await this.openMenu();
     await this.page.getByTestId('logout-sidebar-link').click();
   }
 }

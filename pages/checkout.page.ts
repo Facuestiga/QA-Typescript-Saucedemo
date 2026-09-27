@@ -11,12 +11,14 @@ export class CheckoutPage {
   readonly firstNameInput: Locator;
   readonly lastNameInput: Locator;
   readonly postalCodeInput: Locator;
+  readonly overviewItems: Locator;
 
   constructor(private readonly page: Page) {
     this.firstNameInput = page.getByPlaceholder('First Name');
     this.lastNameInput = page.getByPlaceholder('Last Name');
     this.postalCodeInput = page.getByPlaceholder('Zip/Postal Code');
     this.errorMessage = page.getByTestId('error');
+    this.overviewItems = page.getByTestId('inventory-item');
   }
 
   async fillCustomer(customer: Customer): Promise<void> {
@@ -31,6 +33,18 @@ export class CheckoutPage {
 
   async finish(): Promise<void> {
     await this.page.getByRole('button', { name: 'Finish' }).click();
+  }
+
+  overviewItem(name: string): Locator {
+    return this.overviewItems.filter({ hasText: name });
+  }
+
+  async cancel(): Promise<void> {
+    await this.page.getByRole('button', { name: 'Cancel' }).click();
+  }
+
+  async backHome(): Promise<void> {
+    await this.page.getByRole('button', { name: 'Back Home' }).click();
   }
 
   async expectComplete(): Promise<void> {

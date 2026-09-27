@@ -4,7 +4,7 @@ A TypeScript and Playwright end-to-end test automation project for
 [SauceDemo](https://www.saucedemo.com/). It is designed as a practical bridge
 from Java, Selenium, Appium, and TestNG into modern Playwright test automation.
 
-The suite contains 10 independent test cases across authentication, inventory,
+The suite contains 22 independent test cases across authentication, inventory,
 cart, and checkout flows. It follows the official Playwright recommendations:
 user-facing locators, web-first assertions, test isolation, fixtures, Page
 Objects, multi-browser projects, failure artifacts, and CI execution.
@@ -13,16 +13,15 @@ Objects, multi-browser projects, failure artifacts, and CI execution.
 
 | # | Area | Scenario |
 |---:|---|---|
-| 1 | Authentication | Log in with a valid standard user |
-| 2 | Authentication | Reject an invalid password |
-| 3 | Authentication | Reject a locked-out user |
-| 4 | Authentication | Log out an authenticated user |
-| 5 | Inventory | Display the complete six-product catalog |
-| 6 | Inventory | Sort products by price, low to high |
-| 7 | Inventory | Add and remove a product |
-| 8 | Cart | Preserve a cart item across navigation |
-| 9 | Checkout | Validate required checkout details |
-| 10 | Checkout | Complete an order successfully |
+| 1–4 | Product grid | Catalog contents, responsive layout, product details, and back navigation |
+| 5–8 | Filtering | Name and price sorting in both directions |
+| 9–13 | Cart | Add, remove, multi-item, details-page, and persistence flows |
+| 14–15 | Account | Navigation menu and logout |
+| 16–17 | Authentication | Valid-user pool and invalid-username validation |
+| 18–22 | Checkout | Successful totals, required fields, and cancellation persistence |
+
+Detailed steps, expected results, priority, and automation status are maintained
+in [`test-cases.csv`](test-cases.csv).
 
 ## Architecture
 
