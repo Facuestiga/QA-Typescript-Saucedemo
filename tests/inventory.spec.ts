@@ -1,48 +1,98 @@
 import { test, expect } from './fixtures/test';
 import { users } from './data/users';
 
-test.describe('Inventory', () => {
+const expectedProducts = [
+  'Sauce Labs Backpack',
+  'Sauce Labs Bike Light',
+  'Sauce Labs Bolt T-Shirt',
+  'Sauce Labs Fleece Jacket',
+  'Sauce Labs Onesie',
+  'Test.allTheThings() T-Shirt (Red)',
+];
+
+test.describe('Product grid and filtering', () => {
   test.beforeEach(async ({ inventoryPage, loginPage }) => {
     await loginPage.goto();
     await loginPage.login(users.standard.username, users.standard.password);
     await inventoryPage.expectLoaded();
   });
 
-  test('shows the full catalog', async ({ inventoryPage }) => {
+  test('SL-01 Product grid shows all catalog items @smoke', async ({ inventoryPage }) => {
     await expect(inventoryPage.inventoryItems).toHaveCount(6);
-    await expect(inventoryPage.productNames).toContainText([
-      'Sauce Labs Backpack',
-      'Sauce Labs Bike Light',
-      'Sauce Labs Bolt T-Shirt',
-      'Sauce Labs Fleece Jacket',
-      'Sauce Labs Onesie',
-      'Test.allTheThings() T-Shirt (Red)',
-    ]);
+    expect(await inventoryPage.productNamesText()).toEqual(expectedProducts);
+
+    for (const item of await inventoryPage.inventoryItems.all()) {
+      await expect(item.getByTestId('inventory-item-name')).not.toHaveText('');
+      await expect(item.getByTestId('inventory-item-price')).toHaveText(/^\$\d+\.\d{2}$/);
+      await expect(item.getByRole('img')).toBeVisible();
+      await expect(item.getByRole('button', { name: 'Add to cart' })).toBeEnabled();
+    }
   });
 
-  test('sorts products low to high', async ({ inventoryPage }) => {
-    await inventoryPage.sortSelect.selectOption('lohi');
+  test('SL-02 Responsive layout preserves catalog items', async ({ inventoryPage, page }) => {
+    const desktopNames = await inventoryPage.productNamesText();
 
-    const prices = (await inventoryPage.productPrices.allTextContents()).map(
-      (price) => Number(price.replace('$', '')),
-    );
-    const sortedPrices = [...prices].sort((left, right) => left - right);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(inventoryPage.inventoryItems).toHaveCount(6);
+    const mobileNames = await inventoryPage.productNamesText();
 
-    expect(prices).toEqual(sortedPrices);
+    expect(mobileNames).toEqual(desktopNames);
+    for (const item of await inventoryPage.inventoryItems.all()) {
+      expect(await item.evaluate((element) => element.getBoundingClientRect().width)).toBeLessThanOrEqual(390);
+    }
+
+    await page.setViewportSize({ width: 1280, height: 720 });
+    expect(await inventoryPage.productNamesText()).toEqual(desktopNames);
   });
 
-  test('adds and removes a product', async ({ inventoryPage }) => {
-    const productName = 'Sauce Labs Backpack';
+  test('SL-03 Opening a product shows matching details', async ({ inventoryPage, page }) => {
+    const name = (await inventoryPage.productNames.first().textContent())!;
+    const price = (await inventoryPage.productPrices.first().textContent())!;
 
-    await inventoryPage.addProduct(productName);
-    await expect(inventoryPage.cartBadge).toHaveText('1');
-    await inventoryPage.removeProduct(productName);
+    await inventoryPage.openProduct(name);
 
+    await expect(page).toHaveURL(/inventory-item\.html/);
+    const details = page.locator('.inventory_details');
+    await expect(details.getByTestId('inventory-item-name')).toHaveText(name);
+    await expect(details.getByTestId('inventory-item-price')).toHaveText(price);
+    await expect(details.getByTestId('inventory-item-desc')).not.toHaveText('');
+    await expect(details.getByRole('button', { name: 'Add to cart' })).toBeEnabled();
+  });
+
+  test('SL-04 Back from product details returns to an unchanged grid', async ({ inventoryPage, page }) => {
+    const namesBefore = await inventoryPage.productNamesText();
+    await inventoryPage.openProduct(namesBefore[1]);
+    await page.getByRole('button', { name: 'Back to products' }).click();
+
+    await inventoryPage.expectLoaded();
+    expect(await inventoryPage.productNamesText()).toEqual(namesBefore);
     await expect(inventoryPage.cartBadge).toBeHidden();
-    await expect(
-      inventoryPage.product(productName).getByRole('button', {
-        name: 'Add to cart',
-      }),
-    ).toBeVisible();
   });
+
+  const sortCases = [
+    { id: 'SL-05', title: 'Sort by Name A to Z', option: 'az', kind: 'name', direction: 1 },
+    { id: 'SL-06', title: 'Sort by Name Z to A', option: 'za', kind: 'name', direction: -1 },
+    { id: 'SL-07', title: 'Sort by Price low to high', option: 'lohi', kind: 'price', direction: 1 },
+    { id: 'SL-08', title: 'Sort by Price high to low', option: 'hilo', kind: 'price', direction: -1 },
+  ] as const;
+
+  for (const sortCase of sortCases) {
+    test(`${sortCase.id} ${sortCase.title}`, async ({ inventoryPage }) => {
+      await expect(inventoryPage.sortSelect.locator('option')).toHaveCount(4);
+      await inventoryPage.sortSelect.selectOption(sortCase.option);
+      await expect(inventoryPage.inventoryItems).toHaveCount(6);
+
+      if (sortCase.kind === 'name') {
+        const actual = await inventoryPage.productNamesText();
+        const expected = [...actual].sort(
+          (left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }) * sortCase.direction,
+        );
+        expect(actual).toEqual(expected);
+      } else {
+        const actual = await inventoryPage.productPricesNumber();
+        const expected = [...actual].sort((left, right) => (left - right) * sortCase.direction);
+        expect(actual).toEqual(expected);
+      }
+    });
+  }
 });
