@@ -49,8 +49,6 @@ export class CheckoutPage {
 
   async expectComplete(): Promise<void> {
     await expect(this.page).toHaveURL(/checkout-complete\.html/);
-    await expect(
-      this.page.getByRole('heading', { name: 'Thank you for your order!' }),
-    ).toBeVisible();
+    await expect(this.page.getByRole('heading', { name: 'Thank you for your order!' })).toBeVisible();
   }
 }

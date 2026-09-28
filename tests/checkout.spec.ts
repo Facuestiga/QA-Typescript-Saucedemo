@@ -1,11 +1,7 @@
 import { test, expect } from './fixtures/test';
 import { users } from './data/users';
 
-const products = [
-  'Sauce Labs Backpack',
-  'Sauce Labs Bike Light',
-  'Sauce Labs Bolt T-Shirt',
-] as const;
+const products = ['Sauce Labs Backpack', 'Sauce Labs Bike Light', 'Sauce Labs Bolt T-Shirt'] as const;
 
 test.describe('Cart and checkout', { tag: '@regression' }, () => {
   test.beforeEach(async ({ inventoryPage, loginPage }) => {
@@ -87,41 +83,44 @@ test.describe('Cart and checkout', { tag: '@regression' }, () => {
     expect(await cartPage.itemNames()).toEqual(names);
   });
 
-  test('SL-18 Successful checkout calculates totals and completes the purchase', { tag: '@smoke' }, async ({
-    cartPage,
-    checkoutPage,
-    inventoryPage,
-    page,
-  }) => {
-    const selected = products.slice(0, 2);
-    const prices: number[] = [];
-    for (const product of selected) {
-      prices.push(Number((await inventoryPage.productPrice(product).textContent())!.replace('$', '')));
-      await inventoryPage.addProduct(product);
-    }
-    await inventoryPage.openCart();
-    await cartPage.checkout();
-    await checkoutPage.fillCustomer({ firstName: 'Test', lastName: 'User', postalCode: '12345' });
-    await checkoutPage.continue();
+  test(
+    'SL-18 Successful checkout calculates totals and completes the purchase',
+    { tag: '@smoke' },
+    async ({ cartPage, checkoutPage, inventoryPage, page }) => {
+      const selected = products.slice(0, 2);
+      const prices: number[] = [];
+      for (const product of selected) {
+        prices.push(Number((await inventoryPage.productPrice(product).textContent())!.replace('$', '')));
+        await inventoryPage.addProduct(product);
+      }
+      await inventoryPage.openCart();
+      await cartPage.checkout();
+      await checkoutPage.fillCustomer({
+        firstName: 'Test',
+        lastName: 'User',
+        postalCode: '12345',
+      });
+      await checkoutPage.continue();
 
-    for (const [index, product] of selected.entries()) {
-      await expect(checkoutPage.overviewItem(product)).toBeVisible();
-      await expect(checkoutPage.overviewItem(product).getByTestId('inventory-item-price')).toHaveText(
-        `$${prices[index].toFixed(2)}`,
-      );
-    }
-    const subtotal = prices.reduce((sum, price) => sum + price, 0);
-    const tax = Math.round(subtotal * 0.08 * 100) / 100;
-    await expect(page.getByTestId('subtotal-label')).toHaveText(`Item total: $${subtotal.toFixed(2)}`);
-    await expect(page.getByTestId('tax-label')).toHaveText(`Tax: $${tax.toFixed(2)}`);
-    await expect(page.getByTestId('total-label')).toHaveText(`Total: $${(subtotal + tax).toFixed(2)}`);
+      for (const [index, product] of selected.entries()) {
+        await expect(checkoutPage.overviewItem(product)).toBeVisible();
+        await expect(checkoutPage.overviewItem(product).getByTestId('inventory-item-price')).toHaveText(
+          `$${prices[index].toFixed(2)}`,
+        );
+      }
+      const subtotal = prices.reduce((sum, price) => sum + price, 0);
+      const tax = Math.round(subtotal * 0.08 * 100) / 100;
+      await expect(page.getByTestId('subtotal-label')).toHaveText(`Item total: $${subtotal.toFixed(2)}`);
+      await expect(page.getByTestId('tax-label')).toHaveText(`Tax: $${tax.toFixed(2)}`);
+      await expect(page.getByTestId('total-label')).toHaveText(`Total: $${(subtotal + tax).toFixed(2)}`);
 
-    await checkoutPage.finish();
-    await checkoutPage.expectComplete();
-    await checkoutPage.backHome();
-    await inventoryPage.expectLoaded();
-    await expect(inventoryPage.cartBadge).toBeHidden();
-  });
+      await checkoutPage.finish();
+      await checkoutPage.expectComplete();
+      await checkoutPage.backHome();
+      await inventoryPage.expectLoaded();
+      await expect(inventoryPage.cartBadge).toBeHidden();
+    },
+  );
 
   const validationCases = [
     {
@@ -173,7 +172,11 @@ test.describe('Cart and checkout', { tag: '@regression' }, () => {
     await expect(cartPage.itemPrice(product)).toHaveText(price!);
 
     await cartPage.checkout();
-    await checkoutPage.fillCustomer({ firstName: 'Test', lastName: 'User', postalCode: '12345' });
+    await checkoutPage.fillCustomer({
+      firstName: 'Test',
+      lastName: 'User',
+      postalCode: '12345',
+    });
     await checkoutPage.continue();
     await checkoutPage.cancel();
 

@@ -11,14 +11,14 @@ Objects, multi-browser and mobile projects, failure artifacts, and CI execution.
 
 ## Test cases
 
-| # | Area | Scenario |
-|---:|---|---|
-| 1–4 | Product grid | Catalog contents, responsive layout, product details, and back navigation |
-| 5–8 | Filtering | Name and price sorting in both directions |
-| 9–13 | Cart | Add, remove, multi-item, details-page, and persistence flows |
-| 14–15 | Account | Navigation menu and logout |
-| 16–17 | Authentication | Valid-user pool and invalid-username validation |
-| 18–22 | Checkout | Successful totals, required fields, and cancellation persistence |
+|     # | Area           | Scenario                                                                  |
+| ----: | -------------- | ------------------------------------------------------------------------- |
+|   1–4 | Product grid   | Catalog contents, responsive layout, product details, and back navigation |
+|   5–8 | Filtering      | Name and price sorting in both directions                                 |
+|  9–13 | Cart           | Add, remove, multi-item, details-page, and persistence flows              |
+| 14–15 | Account        | Navigation menu and logout                                                |
+| 16–17 | Authentication | Valid-user pool and invalid-username validation                           |
+| 18–22 | Checkout       | Successful totals, required fields, and cancellation persistence          |
 
 Detailed steps, expected results, priority, and automation status are maintained
 in [`test-cases.csv`](test-cases.csv).
@@ -62,6 +62,7 @@ in [`test-cases.csv`](test-cases.csv).
 - Playwright Test
 - Chromium, Firefox, WebKit, and Pixel 7 emulation projects
 - Playwright HTML report, traces, screenshots, and videos
+- ESLint and Prettier quality gates
 - GitHub Actions
 
 ## Getting started
@@ -91,7 +92,10 @@ npm run test:smoke
 npm run test:regression
 npm run test:mobile
 npm run test:ci
+npm run lint
+npm run format:check
 npm run typecheck
+npm run quality
 npm run report
 ```
 
@@ -124,20 +128,40 @@ npx playwright show-trace test-results/path/to/trace.zip
 - `@mobile` identifies behavior that only makes sense under Mobile Web emulation.
 - The mobile project uses the Pixel 7 device profile and executes smoke plus
   mobile-specific coverage.
-- CI runs type checking before the full cross-browser suite.
+- Pull requests run linting, formatting, type checking, and Chromium smoke tests.
+- Pushes to `main` run Chromium regression plus Firefox, WebKit, and Mobile Web smoke tests.
+- Nightly and manual runs execute the complete suite across every configured project.
 
 ## Execution strategy
 
-| Command | Scope | Intended use |
-|---|---|---|
-| `npm run test:smoke` | Critical paths in Chromium | Fast local and pull-request feedback |
+| Command                   | Scope                                       | Intended use                                   |
+| ------------------------- | ------------------------------------------- | ---------------------------------------------- |
+| `npm run test:smoke`      | Critical paths in Chromium                  | Fast local and pull-request feedback           |
 | `npm run test:regression` | Functional suite across configured projects | Broad validation before integration or release |
-| `npm run test:mobile` | Smoke and mobile-specific cases on Pixel 7 | Mobile Web validation |
-| `npm run test:ci` | Critical paths in Chromium | Stable entry point for CI |
+| `npm run test:mobile`     | Smoke and mobile-specific cases on Pixel 7  | Mobile Web validation                          |
+| `npm run test:ci`         | Critical paths in Chromium                  | Stable entry point for CI                      |
 
 Tags are stored as Playwright metadata rather than as part of test titles. The
 desktop projects omit mobile-only scenarios, while the mobile project combines
 critical paths with responsive coverage.
+
+## Continuous integration
+
+| Trigger           | Quality gate                     | Browser coverage                                              |
+| ----------------- | -------------------------------- | ------------------------------------------------------------- |
+| Pull request      | ESLint, Prettier, and TypeScript | Smoke on Chromium                                             |
+| Push to `main`    | Validated by the pull request    | Regression on Chromium; smoke on Firefox, WebKit, and Pixel 7 |
+| Nightly or manual | Validated by the pull request    | Complete suite on Chromium, Firefox, WebKit, and Pixel 7      |
+
+The nightly workflow runs every day at 06:00 UTC and can also be started from
+the GitHub Actions interface. Concurrency cancels obsolete runs for the same
+branch. Browser matrices keep running after an individual project fails so the
+report shows the full compatibility picture.
+
+Every test job retains its HTML report for 14 days. Failed jobs also retain
+`test-results/`, including available traces, screenshots, and videos. Retries
+remain disabled locally and are limited to CI, where the report identifies tests
+that only passed after retrying.
 
 ## Official references
 

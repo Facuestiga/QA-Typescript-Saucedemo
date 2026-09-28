@@ -1,13 +1,35 @@
-name: Playwright tests
+name: Playwright CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: playwright-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  quality:
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run quality
+
+  smoke-chromium:
+    if: github.event_name == 'pull_request'
+    needs: quality
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
@@ -17,12 +39,120 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps
-      - run: npm run typecheck
-      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:ci
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
-          name: playwright-report
+          name: pr-smoke-playwright-report
           path: playwright-report/
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        with:
+          name: pr-smoke-test-results
+          path: test-results/
+          retention-days: 14
+
+  regression-chromium:
+    if: github.event_name == 'push'
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --project=chromium --grep @regression
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: main-regression-chromium-playwright-report
+          path: playwright-report/
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        with:
+          name: main-regression-chromium-test-results
+          path: test-results/
+          retention-days: 14
+
+  smoke-cross-browser:
+    if: github.event_name == 'push'
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: firefox
+            browser: firefox
+            grep: '@smoke'
+          - project: webkit
+            browser: webkit
+            grep: '@smoke'
+          - project: mobile-chrome
+            browser: chromium
+            grep: '@smoke|@mobile'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - run: npx playwright test --project=${{ matrix.project }} --grep '${{ matrix.grep }}'
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: main-${{ matrix.project }}-playwright-report
+          path: playwright-report/
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        with:
+          name: main-${{ matrix.project }}-test-results
+          path: test-results/
+          retention-days: 14
+
+  nightly-regression:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 25
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: chromium
+            browser: chromium
+          - project: firefox
+            browser: firefox
+          - project: webkit
+            browser: webkit
+          - project: mobile-chrome
+            browser: chromium
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - run: npx playwright test --project=${{ matrix.project }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: nightly-${{ matrix.project }}-playwright-report
+          path: playwright-report/
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        with:
+          name: nightly-${{ matrix.project }}-test-results
+          path: test-results/
           retention-days: 14

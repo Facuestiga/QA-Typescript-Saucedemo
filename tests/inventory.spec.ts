@@ -66,30 +66,49 @@ test.describe('Product grid and filtering', { tag: '@regression' }, () => {
     await expect(inventoryPage.cartBadge).toBeHidden();
   });
 
-  const sortCases = [
-    { id: 'SL-05', title: 'Sort by Name A to Z', option: 'az', kind: 'name', direction: 1 },
-    { id: 'SL-06', title: 'Sort by Name Z to A', option: 'za', kind: 'name', direction: -1 },
-    { id: 'SL-07', title: 'Sort by Price low to high', option: 'lohi', kind: 'price', direction: 1 },
-    { id: 'SL-08', title: 'Sort by Price high to low', option: 'hilo', kind: 'price', direction: -1 },
+  const nameSortCases = [
+    { id: 'SL-05', title: 'Sort by Name A to Z', option: 'az', direction: 1 },
+    { id: 'SL-06', title: 'Sort by Name Z to A', option: 'za', direction: -1 },
   ] as const;
 
-  for (const sortCase of sortCases) {
+  for (const sortCase of nameSortCases) {
     test(`${sortCase.id} ${sortCase.title}`, async ({ inventoryPage }) => {
       await expect(inventoryPage.sortSelect.locator('option')).toHaveCount(4);
       await inventoryPage.sortSelect.selectOption(sortCase.option);
       await expect(inventoryPage.inventoryItems).toHaveCount(6);
 
-      if (sortCase.kind === 'name') {
-        const actual = await inventoryPage.productNamesText();
-        const expected = [...actual].sort(
-          (left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }) * sortCase.direction,
-        );
-        expect(actual).toEqual(expected);
-      } else {
-        const actual = await inventoryPage.productPricesNumber();
-        const expected = [...actual].sort((left, right) => (left - right) * sortCase.direction);
-        expect(actual).toEqual(expected);
-      }
+      const actual = await inventoryPage.productNamesText();
+      const expected = [...actual].sort(
+        (left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }) * sortCase.direction,
+      );
+      expect(actual).toEqual(expected);
+    });
+  }
+
+  const priceSortCases = [
+    {
+      id: 'SL-07',
+      title: 'Sort by Price low to high',
+      option: 'lohi',
+      direction: 1,
+    },
+    {
+      id: 'SL-08',
+      title: 'Sort by Price high to low',
+      option: 'hilo',
+      direction: -1,
+    },
+  ] as const;
+
+  for (const sortCase of priceSortCases) {
+    test(`${sortCase.id} ${sortCase.title}`, async ({ inventoryPage }) => {
+      await expect(inventoryPage.sortSelect.locator('option')).toHaveCount(4);
+      await inventoryPage.sortSelect.selectOption(sortCase.option);
+      await expect(inventoryPage.inventoryItems).toHaveCount(6);
+
+      const actual = await inventoryPage.productPricesNumber();
+      const expected = [...actual].sort((left, right) => (left - right) * sortCase.direction);
+      expect(actual).toEqual(expected);
     });
   }
 });
