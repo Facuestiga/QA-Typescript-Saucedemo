@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures/test';
 import { users } from './data/users';
 
-test.describe('Account and authentication', () => {
+test.describe('Account and authentication', { tag: '@regression' }, () => {
   test.beforeEach(async ({ loginPage }) => {
     await loginPage.goto();
   });

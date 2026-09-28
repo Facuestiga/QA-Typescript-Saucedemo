@@ -7,7 +7,7 @@ const products = [
   'Sauce Labs Bolt T-Shirt',
 ] as const;
 
-test.describe('Cart and checkout', () => {
+test.describe('Cart and checkout', { tag: '@regression' }, () => {
   test.beforeEach(async ({ inventoryPage, loginPage }) => {
     await loginPage.goto();
     await loginPage.login(users.standard.username, users.standard.password);
@@ -87,7 +87,7 @@ test.describe('Cart and checkout', () => {
     expect(await cartPage.itemNames()).toEqual(names);
   });
 
-  test('SL-18 Successful checkout calculates totals and completes the purchase @smoke', async ({
+  test('SL-18 Successful checkout calculates totals and completes the purchase', { tag: '@smoke' }, async ({
     cartPage,
     checkoutPage,
     inventoryPage,
