@@ -10,12 +10,7 @@ test.describe('Account and authentication', { tag: '@regression' }, () => {
     await loginPage.login(users.standard.username, users.standard.password);
     await inventoryPage.openMenu();
 
-    for (const id of [
-      'inventory-sidebar-link',
-      'about-sidebar-link',
-      'logout-sidebar-link',
-      'reset-sidebar-link',
-    ]) {
+    for (const id of ['inventory-sidebar-link', 'about-sidebar-link', 'logout-sidebar-link', 'reset-sidebar-link']) {
       await expect(page.getByTestId(id)).toBeVisible();
     }
 
@@ -34,7 +29,10 @@ test.describe('Account and authentication', { tag: '@regression' }, () => {
   });
 
   for (const user of [users.standard, users.problem]) {
-    test(`SL-16 Every valid user in the pool can log in and reach Products (${user.username})`, async ({ inventoryPage, loginPage }) => {
+    test(`SL-16 Every valid user in the pool can log in and reach Products (${user.username})`, async ({
+      inventoryPage,
+      loginPage,
+    }) => {
       await loginPage.login(user.username, user.password);
       await inventoryPage.expectLoaded();
       await expect(inventoryPage.inventoryItems).toHaveCount(6);
@@ -49,9 +47,7 @@ test.describe('Account and authentication', { tag: '@regression' }, () => {
     await loginPage.login('invalid_user', users.standard.password);
 
     await expect(page).toHaveURL('/');
-    await expect(loginPage.errorMessage).toContainText(
-      'Username and password do not match any user in this service',
-    );
+    await expect(loginPage.errorMessage).toContainText('Username and password do not match any user in this service');
     await expect(page.locator('.error_icon')).toHaveCount(2);
     await expect(loginPage.usernameInput).toHaveCSS('border-bottom-color', 'rgb(226, 35, 26)');
     await expect(loginPage.passwordInput).toHaveCSS('border-bottom-color', 'rgb(226, 35, 26)');
