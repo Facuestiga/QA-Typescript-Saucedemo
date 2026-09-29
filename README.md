@@ -1,8 +1,7 @@
 # Playwright SauceDemo
 
 A TypeScript and Playwright end-to-end test automation project for
-[SauceDemo](https://www.saucedemo.com/). It is designed as a practical bridge
-from Java, Selenium, Appium, and TestNG into modern Playwright test automation.
+[SauceDemo](https://www.saucedemo.com/).
 
 The suite contains 23 independent test cases across authentication, inventory,
 cart, and checkout flows. It follows the official Playwright recommendations:
@@ -28,6 +27,8 @@ in [`test-cases.csv`](test-cases.csv).
 ```text
 .
 ├── .github/workflows/playwright.yml
+├── config/
+│   └── env.ts
 ├── pages/
 │   ├── cart.page.ts
 │   ├── checkout.page.ts
@@ -40,6 +41,7 @@ in [`test-cases.csv`](test-cases.csv).
 │   ├── checkout.spec.ts
 │   └── inventory.spec.ts
 ├── playwright.config.ts
+├── .env.example
 ├── tsconfig.json
 └── package.json
 ```
@@ -49,7 +51,10 @@ in [`test-cases.csv`](test-cases.csv).
 - **Page Object Model:** page locators and user actions live in page classes.
 - **Custom fixtures:** tests receive ready-to-use Page Objects through a typed
   fixture, similar in purpose to TestNG dependency injection.
-- **Test data model:** credentials are immutable and separate from test logic.
+- **Validated configuration:** environment settings and credentials are loaded
+  once and checked before browser execution begins.
+- **Test data model:** credentials, user variants, and scenario data remain
+  separate from test logic and from each other.
 - **AAA flow:** tests keep setup, action, and assertion phases visually clear.
 - **Isolated browser contexts:** every test gets fresh cookies and storage.
 - **User-visible contracts:** role, placeholder, text, and `data-test` locators
@@ -70,14 +75,35 @@ in [`test-cases.csv`](test-cases.csv).
 ```bash
 npm ci
 npx playwright install
+cp .env.example .env
 npm test
 ```
 
-The default target is `https://www.saucedemo.com`. To test another compatible
-environment, set `BASE_URL`:
+Replace `TEST_PASSWORD` in `.env` with the SauceDemo practice password. The
+local `.env` file is ignored by Git and must never be committed.
+
+## Configuration and credentials
+
+| Variable        | Required | Default                     | Purpose                         |
+| --------------- | -------- | --------------------------- | ------------------------------- |
+| `BASE_URL`      | No       | `https://www.saucedemo.com` | Compatible application endpoint |
+| `TEST_ENV`      | No       | `local`                     | `local` or `ci` execution mode  |
+| `TEST_USERNAME` | Yes      | None                        | Primary test account            |
+| `TEST_PASSWORD` | Yes      | None                        | Test account password           |
+
+Configuration is loaded from process variables, with an optional local `.env`
+file. Startup fails before browser launch when a required value is absent or a
+configured value is invalid. Validation errors identify variable names without
+printing credentials.
+
+Environment configuration and credentials can also be supplied directly:
 
 ```bash
-BASE_URL=https://www.saucedemo.com npm test
+BASE_URL=https://www.saucedemo.com \
+TEST_ENV=local \
+TEST_USERNAME=standard_user \
+TEST_PASSWORD=your_test_password \
+npm run test:smoke
 ```
 
 ## Useful commands
@@ -122,7 +148,8 @@ npx playwright show-trace test-results/path/to/trace.zip
 - Tests remain independent and can run in parallel.
 - Assertions use Playwright's retrying `expect` matchers.
 - Page Objects expose business actions instead of implementation details.
-- Secrets are not required because SauceDemo publishes its practice accounts.
+- SauceDemo publishes its practice accounts, but credentials still use the same
+  environment-variable boundary expected for private test systems.
 - `@regression` identifies the complete functional coverage.
 - `@smoke` identifies the fastest critical paths and runs on Chromium.
 - `@mobile` identifies behavior that only makes sense under Mobile Web emulation.
@@ -157,6 +184,12 @@ The nightly workflow runs every day at 06:00 UTC and can also be started from
 the GitHub Actions interface. Concurrency cancels obsolete runs for the same
 branch. Browser matrices keep running after an individual project fails so the
 report shows the full compatibility picture.
+
+Before running the workflow, create a repository variable named `BASE_URL` and
+repository secrets named `TEST_USERNAME` and `TEST_PASSWORD`. GitHub Variables
+hold non-sensitive configuration, while GitHub Secrets hold credentials. The
+workflow passes them to the same validated configuration used locally; secret
+values are not stored in the repository or printed by the configuration layer.
 
 Every test job retains its HTML report for 14 days. Failed jobs also retain
 `test-results/`, including available traces, screenshots, and videos. Retries
