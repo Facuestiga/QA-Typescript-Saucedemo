@@ -13,6 +13,12 @@ concurrency:
   group: playwright-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  BASE_URL: ${{ vars.BASE_URL }}
+  TEST_ENV: ci
+  TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
+  TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+
 jobs:
   quality:
     if: github.event_name == 'pull_request'
